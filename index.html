@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 托管分流版</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 15px; background: #f0f2f5; color: #1c1e21; }
+        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 500px; margin: 0 auto 15px; }
+        .section-title { font-size: 1rem; font-weight: bold; color: #1877f2; margin-bottom: 12px; display: flex; align-items: center; }
+        .section-title::before { content: ""; width: 4px; height: 16px; background: #1877f2; margin-right: 8px; border-radius: 2px; }
+        label { font-size: 12px; color: #65676b; }
+        input, select { width: 100%; padding: 12px; margin: 6px 0 12px; border: 1px solid #dddfe2; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .btn-update { background: #42b72a; color: white; } /* 绿色-更新 */
+        .btn-create { background: #1877f2; color: white; } /* 蓝色-新建 */
+        .btn-fetch { background: #f2f3f5; color: #4b4f56; font-size: 13px; margin-bottom: 10px; }
+        #status { position: fixed; bottom: 20px; left: 20px; right: 20px; padding: 15px; border-radius: 10px; font-size: 14px; display: none; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .loading { background: #fff3cd; color: #856404; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .user-profile { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 12px; }
+        .user-profile img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; border: 2px solid #1877f2; }
+        .user-profile .name { font-weight: bold; font-size: 16px; color: #1c1e21; }
+        .user-profile .status-tag { font-size: 11px; color: #42b72a; display: flex; align-items: center; }
+        .user-profile .status-tag::before { content: '●'; margin-right: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="userInfo" class="user-profile" style="display: none;">
+        <img id="userAvatar" src="" alt="Avatar">
+        <div>
+            <div class="name" id="userName">---</div>
+            <div class="status-tag">已验证身份</div>
+        </div>
+    </div>
+    <label>1. 我的 GitHub Token (自动保存)</label>
+    <input type="password" id="token" placeholder="粘贴 ghp_ 开头的密钥" onchange="saveToken()">
+    <input type="file" id="fileInput" accept=".html">
+    <p style="font-size: 11px; color: red; margin: 0;">* 先选文件，再选操作</p>
+</div>
+
+<div class="card">
+    <div class="section-title">方案 A：更新已有仓库</div>
+    <button class="btn-fetch" onclick="fetchRepos()">刷新已有仓库列表 🔄</button>
+    <select id="repoSelect">
+        <option value="">-- 选择仓库 --</option>
+    </select>
+    <button class="btn-update" onclick="handleUpdate()">覆盖并同步 Pages</button>
+</div>
+
+<div class="card">
+    <div class="section-title">方案 B：新建仓库托管</div>
+    <label>输入新仓库名称 (英文)</label>
+    <input type="text" id="newRepoName" placeholder="例如: my-new-web">
+    <button class="btn-create" onclick="handleCreate()">一键创建+托管</button>
+</div>
+
+<div id="status"></div>
+
+<script>
+    const log = (msg, type) => {
+        const s = document.getElementById('status');
+        s.style.display = 'block';
+        s.innerText = msg;
+        s.className = type;
+        if(type === 'success') setTimeout(()=>s.style.display='none', 5000);
+    };
+
+    const saveToken = () => {
+        localStorage.setItem('gh_token', document.getElementById('token').value);
+        loadUserInfo();
+    };
+
+    async function loadUserInfo() {
+        const token = document.getElementById('token').value;
+        if (!token) {
+            document.getElementById('userInfo').style.display = 'none';
+            return;
+        }
+        try {
+            const res = await ghFetch('https://api.github.com/user');
+            if (res.ok) {
+                const user = await res.json();
+                document.getElementById('userInfo').style.display = 'flex';
+                document.getElementById('userAvatar').src = user.avatar_url;
+                document.getElementById('userName').innerText = user.name || user.login;
+                fetchRepos();
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+            }
+        } catch(e) {
+            document.getElementById('userInfo').style.display = 'none';
+        }
+    }
+
+    window.onload = () => {
+        document.getElementById('token').value = localStorage.getItem('gh_token') || '';
+        if(document.getElementById('token').value) loadUserInfo();
+    };
+
+    async function ghFetch(url, method = 'GET', body = null) {
+        const token = document.getElementById('token').value;
+        const opts = {
+            method,
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        };
+        if (body) {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(body);
+        }
+        return fetch(url, opts);
+    }
+
+    // 刷新列表
+    async function fetchRepos() {
+        try {
+            const res = await ghFetch('https://api.github.com/user/repos?per_page=100&sort=updated');
+            const repos = await res.json();
+            const select = document.getElementById('repoSelect');
+            select.innerHTML = '<option value="">-- 选择仓库 --</option>';
+            repos.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.full_name;
+                opt.innerText = r.name;
+                select.appendChild(opt);
+            });
+        } catch(e) { log("列表刷新失败", "error"); }
+    }
+
+    // 核心上传逻辑
+    async function uploadToGithub(fullPath) {
+        const fileInput = document.getElementById('fileInput');
+        if (!fileInput.files[0]) throw new Error("请先选择 HTML 文件");
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        return new Promise((resolve, reject) => {
+            reader.onload = async (e) => {
+                const base64 = e.target.result.split(',')[1];
+                try {
+                    const fileRes = await ghFetch(`https://api.github.com/repos/${fullPath}/contents/index.html`);
+                    let sha = null;
+                    if (fileRes.ok) sha = (await fileRes.json()).sha;
+
+                    const putRes = await ghFetch(`https://api.github.com/repos/${fullPath}/contents/index.html`, 'PUT', {
+                        message: "Upload via Mobile",
+                        content: base64,
+                        sha: sha
+                    });
+                    if (putRes.ok) resolve(); else reject(new Error("文件上传失败"));
+                } catch(err) { reject(err); }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 处理已有仓库更新
+    async function handleUpdate() {
+        const repo = document.getElementById('repoSelect').value;
+        if (!repo) return alert("请选个仓库");
+        log("正在更新...", "loading");
+        try {
+            await uploadToGithub(repo);
+            log("✅ 更新成功！", "success");
+        } catch(e) { log(e.message, "error"); }
+    }
+
+    // 处理新建仓库托管
+    async function handleCreate() {
+        const name = document.getElementById('newRepoName').value;
+        if (!name) return alert("写个名字");
+        log("正在疯狂创建并配置中...", "loading");
+        
+        try {
+            const userRes = await ghFetch('https://api.github.com/user');
+            const username = (await userRes.json()).login;
+
+            // 1. 创建
+            const createRes = await ghFetch('https://api.github.com/user/repos', 'POST', {
+                name: name, auto_init: true
+            });
+            if (!createRes.ok) throw new Error("仓库名可能重复了");
+            
+            await new Promise(r => setTimeout(r, 2000)); // 歇两秒等分支生成
+
+            // 2. 传文件
+            await uploadToGithub(`${username}/${name}`);
+
+            // 3. 开 Pages
+            await ghFetch(`https://api.github.com/repos/${username}/${name}/pages`, 'POST', {
+                source: { branch: "main", path: "/" }
+            });
+
+            log(`✅ 创建并部署成功！\n地址: https://${username}.github.io/${name}/`, "success");
+            fetchRepos(); // 顺便刷新列表
+        } catch(e) { log(e.message, "error"); }
+    }
+</script>
+</body>
+</html>
