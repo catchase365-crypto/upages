@@ -38,6 +38,7 @@
     </select>
     <button class="btn-update" onclick="handleUpdate()">覆盖并同步 Pages</button>
     <button class="btn-fetch" style="background:#e7f3ff; color:#1877f2; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
+    <button class="btn-fetch" style="background:#fff7e6; color:#d46b08; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
 </div>
 
 <div class="card">
@@ -134,6 +135,32 @@
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    // 下载 index.html
+    async function downloadIndex() {
+        const repo = document.getElementById('repoSelect').value;
+        if (!repo) return alert("请先选择一个仓库");
+        log("正在拉取源码...", "loading");
+        try {
+            const res = await ghFetch(`https://api.github.com/repos/${repo}/contents/index.html`);
+            if (!res.ok) throw new Error("未找到 index.html 或读取失败");
+            const data = await res.json();
+            // 处理 Base64 解码并兼容中文
+            const binary = atob(data.content.replace(/\s/g, ''));
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const content = new TextDecoder().decode(bytes);
+            
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `index_${repo.split('/')[1]}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+            log("✅ 下载成功", "success");
+        } catch(e) { log(e.message, "error"); }
     }
 
     // 处理已有仓库更新
