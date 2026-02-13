@@ -5,24 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub 托管分流版</title>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 15px; background: #f0f2f5; color: #1c1e21; }
-        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 500px; margin: 0 auto 15px; }
-        .section-title { font-size: 1rem; font-weight: bold; color: #1877f2; margin-bottom: 12px; display: flex; align-items: center; }
-        .section-title::before { content: ""; width: 4px; height: 16px; background: #1877f2; margin-right: 8px; border-radius: 2px; }
-        label { font-size: 12px; color: #65676b; }
-        input, select { width: 100%; padding: 12px; margin: 6px 0 12px; border: 1px solid #dddfe2; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        body { font-family: "Inter", -apple-system, sans-serif; padding: 15px; background: radial-gradient(circle at top, #1c1c1e 0%, #0a0a0a 100%); color: #d1d1d6; min-height: 100vh; }
+        .card { background: rgba(28, 28, 32, 0.85); padding: 20px; border-radius: 16px; border: 1px solid #3a3a3c; box-shadow: 0 8px 32px rgba(0,0,0,0.6); max-width: 500px; margin: 0 auto 15px; backdrop-filter: blur(10px); }
+        .section-title { font-size: 0.9rem; font-weight: 600; color: #ffb7c5; margin-bottom: 15px; display: flex; align-items: center; text-transform: uppercase; letter-spacing: 1px; }
+        .section-title::before { content: ""; width: 4px; height: 18px; background: #ffb7c5; margin-right: 10px; box-shadow: 0 0 10px #ffb7c5; border-radius: 2px; }
+        label { font-size: 11px; color: #c08e9b; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #3a3a3c; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #000000; color: #ffffff; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
-        .btn-update { background: #42b72a; color: white; } /* 绿色-更新 */
-        .btn-create { background: #1877f2; color: white; } /* 蓝色-新建 */
-        .btn-danger { background: #fa3e3e; color: white; } /* 红色-删除 */
-        .btn-fetch { background: #f2f3f5; color: #4b4f56; font-size: 13px; margin-bottom: 10px; }
-        #status { position: fixed; bottom: 20px; left: 20px; right: 20px; padding: 15px; border-radius: 10px; font-size: 14px; display: none; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-        .loading { background: #fff3cd; color: #856404; }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
+        .btn-update { background: #d44d70; color: white; } /* 樱花红-更新 */
+        .btn-create { background: #8e4483; color: white; } /* 暮色紫-新建 */
+        .btn-danger { background: #a33b3b; color: #fcc; } /* 灰红-删除 */
+        .btn-fetch { background: #4a2d38; color: #ffb7c5; font-size: 13px; margin-bottom: 10px; border: 1px solid #5a3341; }
+        #status { position: fixed; bottom: 20px; left: 20px; right: 20px; padding: 16px; border-radius: 8px; font-size: 14px; display: none; z-index: 100; text-align: center; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .loading { background: rgba(28, 28, 30, 0.9); color: #ffd60a; border-color: #ffd60a; }
+        .success { background: rgba(28, 28, 30, 0.9); color: #32d74b; border-color: #32d74b; }
+        .error { background: rgba(28, 28, 30, 0.9); color: #ff453a; border-color: #ff453a; }
+        .user-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 15px; background: rgba(28, 28, 32, 0.85); border-radius: 16px; border: 1px solid #3a3a3c; max-width: 500px; margin: 0 auto 15px; backdrop-filter: blur(8px); }
+        .user-profile img { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #ffb7c5; box-shadow: 0 0 12px rgba(255, 183, 197, 0.4); }
+        .user-info div { font-size: 15px; font-weight: 600; color: #ffffff; }
+        .user-info span { font-size: 11px; color: #8e8e93; display: block; margin-top: 2px; }
     </style>
 </head>
 <body>
+
+<div id="userProfile" class="user-profile" style="display:none;">
+    <img id="userAvatar" src="" alt="avatar">
+    <div class="user-info">
+        <div id="userName">Loading...</div>
+        <span id="userQuota">检测中...</span>
+    </div>
+</div>
 
 <div class="card">
     <label>1. 我的 GitHub Token (自动保存)</label>
@@ -38,8 +50,9 @@
         <option value="">-- 选择仓库 --</option>
     </select>
     <button class="btn-update" onclick="handleUpdate()">覆盖并同步 Pages</button>
-    <button class="btn-fetch" style="background:#e7f3ff; color:#1877f2; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
-    <button class="btn-fetch" style="background:#fff7e6; color:#d46b08; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
+    <button class="btn-fetch" style="background:#2d1b22; color:#ffb7c5; border: 1px solid #d44d70; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
+    <div id="deployStatus" style="font-size: 12px; margin-top: 10px; color: #8e8e93; display:none; text-align: center; border: 1px solid #333; background: #1c1c1e; padding: 8px; border-radius: 6px;">🚀 构建状态: <span id="deployState" style="color: #fff;">检测中...</span></div>
+    <button class="btn-fetch" style="background:#2d1b22; color:#f8bbd0; border: 1px solid #8e4483; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
     <button class="btn-danger" style="margin-top:10px;" onclick="handleDelete()">🗑️ 彻底删除该仓库</button>
 </div>
 
@@ -61,11 +74,34 @@
         if(type === 'success') setTimeout(()=>s.style.display='none', 5000);
     };
 
-    const saveToken = () => localStorage.setItem('gh_token', document.getElementById('token').value);
-    window.onload = () => {
-        document.getElementById('token').value = localStorage.getItem('gh_token') || '';
-        if(document.getElementById('token').value) fetchRepos();
+    const saveToken = () => {
+        localStorage.setItem('gh_token', document.getElementById('token').value);
+        if(document.getElementById('token').value) fetchUserInfo();
     };
+
+    window.onload = () => {
+        const token = localStorage.getItem('gh_token') || '';
+        document.getElementById('token').value = token;
+        if(token) fetchUserInfo();
+    };
+
+    async function fetchUserInfo() {
+        try {
+            const res = await ghFetch('https://api.github.com/user');
+            if (!res.ok) throw new Error("Token 无效或已过期");
+            const data = await res.json();
+            document.getElementById('userProfile').style.display = 'flex';
+            document.getElementById('userAvatar').src = data.avatar_url;
+            document.getElementById('userName').innerText = data.login + (data.name ? ` (${data.name})` : '');
+            const storage = (data.disk_usage / 1024).toFixed(2);
+            document.getElementById('userQuota').innerText = `仓库: ${data.public_repos}公开 / ${data.total_private_repos || 0}私有 | 占用: ${storage} MB`;
+            log("Token 验证成功", "success");
+            fetchRepos();
+        } catch(e) {
+            document.getElementById('userProfile').style.display = 'none';
+            log(e.message, "error");
+        }
+    }
 
     async function ghFetch(url, method = 'GET', body = null) {
         const token = document.getElementById('token').value;
@@ -165,6 +201,38 @@
         } catch(e) { log(e.message, "error"); }
     }
 
+    // 轮询部署状态
+    async function checkDeploymentProgress(repo) {
+        const statusDiv = document.getElementById('deployStatus');
+        const stateSpan = document.getElementById('deployState');
+        statusDiv.style.display = 'block';
+        stateSpan.innerText = "⏳ 获取状态中...";
+
+        const poll = async () => {
+            try {
+                const res = await ghFetch(`https://api.github.com/repos/${repo}/pages/deployments`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.length === 0) return;
+
+                const latest = data[0].status;
+                const statusMap = {
+                    'queued': '⏳ 正在排队...',
+                    'in_progress': '⚙️ 正在构建...',
+                    'succeeded': '✅ 部署成功 (已上线)',
+                    'failed': '❌ 部署失败',
+                    'stale': '⚠️ 已过期'
+                };
+                stateSpan.innerText = statusMap[latest] || latest;
+
+                if (latest === 'queued' || latest === 'in_progress') {
+                    setTimeout(poll, 3000);
+                }
+            } catch (e) { console.error(e); }
+        };
+        poll();
+    }
+
     // 处理已有仓库更新
     async function handleUpdate() {
         const repo = document.getElementById('repoSelect').value;
@@ -173,6 +241,7 @@
         try {
             await uploadToGithub(repo);
             log("✅ 更新成功！", "success");
+            checkDeploymentProgress(repo);
         } catch(e) { log(e.message, "error"); }
     }
 
@@ -203,6 +272,7 @@
             });
 
             log(`✅ 创建并部署成功！\n地址: https://${username}.github.io/${name}/`, "success");
+            checkDeploymentProgress(`${username}/${name}`);
             fetchRepos(); // 顺便刷新列表
         } catch(e) { log(e.message, "error"); }
     }
