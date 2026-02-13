@@ -19,23 +19,11 @@
         .loading { background: #fff3cd; color: #856404; }
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
-        .user-profile { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 12px; }
-        .user-profile img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; border: 2px solid #1877f2; }
-        .user-profile .name { font-weight: bold; font-size: 16px; color: #1c1e21; }
-        .user-profile .status-tag { font-size: 11px; color: #42b72a; display: flex; align-items: center; }
-        .user-profile .status-tag::before { content: '●'; margin-right: 4px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="userInfo" class="user-profile" style="display: none;">
-        <img id="userAvatar" src="" alt="Avatar">
-        <div>
-            <div class="name" id="userName">---</div>
-            <div class="status-tag">已验证身份</div>
-        </div>
-    </div>
     <label>1. 我的 GitHub Token (自动保存)</label>
     <input type="password" id="token" placeholder="粘贴 ghp_ 开头的密钥" onchange="saveToken()">
     <input type="file" id="fileInput" accept=".html">
@@ -49,6 +37,7 @@
         <option value="">-- 选择仓库 --</option>
     </select>
     <button class="btn-update" onclick="handleUpdate()">覆盖并同步 Pages</button>
+    <button class="btn-fetch" style="background:#e7f3ff; color:#1877f2; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
 </div>
 
 <div class="card">
@@ -69,36 +58,10 @@
         if(type === 'success') setTimeout(()=>s.style.display='none', 5000);
     };
 
-    const saveToken = () => {
-        localStorage.setItem('gh_token', document.getElementById('token').value);
-        loadUserInfo();
-    };
-
-    async function loadUserInfo() {
-        const token = document.getElementById('token').value;
-        if (!token) {
-            document.getElementById('userInfo').style.display = 'none';
-            return;
-        }
-        try {
-            const res = await ghFetch('https://api.github.com/user');
-            if (res.ok) {
-                const user = await res.json();
-                document.getElementById('userInfo').style.display = 'flex';
-                document.getElementById('userAvatar').src = user.avatar_url;
-                document.getElementById('userName').innerText = user.name || user.login;
-                fetchRepos();
-            } else {
-                document.getElementById('userInfo').style.display = 'none';
-            }
-        } catch(e) {
-            document.getElementById('userInfo').style.display = 'none';
-        }
-    }
-
+    const saveToken = () => localStorage.setItem('gh_token', document.getElementById('token').value);
     window.onload = () => {
         document.getElementById('token').value = localStorage.getItem('gh_token') || '';
-        if(document.getElementById('token').value) loadUserInfo();
+        if(document.getElementById('token').value) fetchRepos();
     };
 
     async function ghFetch(url, method = 'GET', body = null) {
@@ -115,6 +78,18 @@
             opts.body = JSON.stringify(body);
         }
         return fetch(url, opts);
+    }
+
+    // 跳转到 Pages 页面
+    function openLiveSite() {
+        const repo = document.getElementById('repoSelect').value;
+        if (!repo) return alert("请先选择一个仓库");
+        const [user, name] = repo.split('/');
+        // 检查是否是特殊主页仓库 (user.github.io)
+        const url = name.toLowerCase() === `${user.toLowerCase()}.github.io` 
+            ? `https://${user}.github.io/` 
+            : `https://${user}.github.io/${name}/`;
+        window.open(url, '_blank');
     }
 
     // 刷新列表
