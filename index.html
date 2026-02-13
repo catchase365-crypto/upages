@@ -14,6 +14,7 @@
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
         .btn-update { background: #42b72a; color: white; } /* 绿色-更新 */
         .btn-create { background: #1877f2; color: white; } /* 蓝色-新建 */
+        .btn-danger { background: #fa3e3e; color: white; } /* 红色-删除 */
         .btn-fetch { background: #f2f3f5; color: #4b4f56; font-size: 13px; margin-bottom: 10px; }
         #status { position: fixed; bottom: 20px; left: 20px; right: 20px; padding: 15px; border-radius: 10px; font-size: 14px; display: none; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
         .loading { background: #fff3cd; color: #856404; }
@@ -39,6 +40,7 @@
     <button class="btn-update" onclick="handleUpdate()">覆盖并同步 Pages</button>
     <button class="btn-fetch" style="background:#e7f3ff; color:#1877f2; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
     <button class="btn-fetch" style="background:#fff7e6; color:#d46b08; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
+    <button class="btn-danger" style="margin-top:10px;" onclick="handleDelete()">🗑️ 彻底删除该仓库</button>
 </div>
 
 <div class="card">
@@ -202,6 +204,27 @@
 
             log(`✅ 创建并部署成功！\n地址: https://${username}.github.io/${name}/`, "success");
             fetchRepos(); // 顺便刷新列表
+        } catch(e) { log(e.message, "error"); }
+    }
+
+    // 彻底删除仓库
+    async function handleDelete() {
+        const repo = document.getElementById('repoSelect').value;
+        if (!repo) return alert("请先选择一个要删除的仓库");
+        
+        const confirmMsg = `⚠️ 极其危险操作！\n确定要彻底删除仓库 [${repo}] 吗？\n删除后无法找回！\n(注：Token 必须勾选 'delete_repo' 权限)`;
+        if (!confirm(confirmMsg)) return;
+
+        log("正在执行删除...", "loading");
+        try {
+            const res = await ghFetch(`https://api.github.com/repos/${repo}`, 'DELETE');
+            if (res.status === 204) {
+                log("✅ 仓库已永久删除", "success");
+                fetchRepos();
+            } else {
+                const data = await res.json();
+                throw new Error(data.message || "删除失败，请检查 Token 权限");
+            }
         } catch(e) { log(e.message, "error"); }
     }
 </script>
