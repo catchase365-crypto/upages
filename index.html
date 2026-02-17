@@ -53,6 +53,7 @@
     <button class="btn-fetch" style="background:#2d1b22; color:#ffb7c5; border: 1px solid #d44d70; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
     <div id="deployStatus" style="font-size: 12px; margin-top: 10px; color: #8e8e93; display:none; text-align: center; border: 1px solid #333; background: #1c1c1e; padding: 8px; border-radius: 6px;">🚀 构建状态: <span id="deployState" style="color: #fff;">检测中...</span></div>
     <button class="btn-fetch" style="background:#2d1b22; color:#f8bbd0; border: 1px solid #8e4483; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
+    <button class="btn-fetch" style="background:#1a237e; color:#c5cae9; border: 1px solid #3f51b5; margin-top:10px;" onclick="handleRename()">✏️ 修改仓库名 (同步更改网址后缀)</button>
     <button class="btn-danger" style="margin-top:10px;" onclick="handleDelete()">🗑️ 彻底删除该仓库</button>
 </div>
 
@@ -274,6 +275,29 @@
             log(`✅ 创建并部署成功！\n地址: https://${username}.github.io/${name}/`, "success");
             checkDeploymentProgress(`${username}/${name}`);
             fetchRepos(); // 顺便刷新列表
+        } catch(e) { log(e.message, "error"); }
+    }
+
+    // 修改仓库名称
+    async function handleRename() {
+        const repo = document.getElementById('repoSelect').value;
+        if (!repo) return alert("请先选择一个仓库");
+        const currentName = repo.split('/')[1];
+        const newName = prompt("请输入新的仓库名称 (英文/数字/短横线):", currentName);
+        if (!newName || newName.trim() === "" || newName.trim() === currentName) return;
+
+        log("正在重命名仓库...", "loading");
+        try {
+            const res = await ghFetch(`https://api.github.com/repos/${repo}`, 'PATCH', { 
+                name: newName.trim() 
+            });
+            if (res.ok) {
+                log("✅ 重命名成功！网址后缀已同步更新", "success");
+                await fetchRepos(); // 刷新列表
+            } else {
+                const data = await res.json();
+                throw new Error(data.message || "重命名失败");
+            }
         } catch(e) { log(e.message, "error"); }
     }
 
