@@ -51,7 +51,7 @@
     </select>
     <button class="btn-update" onclick="handleUpdate()">覆盖并同步 Pages</button>
     <button class="btn-fetch" style="background:#2d1b22; color:#ffb7c5; border: 1px solid #d44d70; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
-    <div id="deployStatus" style="font-size: 12px; margin-top: 10px; color: #8e8e93; display:none; text-align: center; border: 1px solid #333; background: #1c1c1e; padding: 8px; border-radius: 6px;">🚀 构建状态: <span id="deployState" style="color: #fff;">检测中...</span></div>
+
     <button class="btn-fetch" style="background:#2d1b22; color:#f8bbd0; border: 1px solid #8e4483; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
     <button class="btn-fetch" style="background:#1a237e; color:#c5cae9; border: 1px solid #3f51b5; margin-top:10px;" onclick="handleRename()">✏️ 修改仓库名 (同步更改网址后缀)</button>
     <button class="btn-danger" style="margin-top:10px;" onclick="handleDelete()">🗑️ 彻底删除该仓库</button>
@@ -202,37 +202,7 @@
         } catch(e) { log(e.message, "error"); }
     }
 
-    // 轮询部署状态
-    async function checkDeploymentProgress(repo) {
-        const statusDiv = document.getElementById('deployStatus');
-        const stateSpan = document.getElementById('deployState');
-        statusDiv.style.display = 'block';
-        stateSpan.innerText = "⏳ 获取状态中...";
 
-        const poll = async () => {
-            try {
-                const res = await ghFetch(`https://api.github.com/repos/${repo}/pages/deployments`);
-                if (!res.ok) return;
-                const data = await res.json();
-                if (data.length === 0) return;
-
-                const latest = data[0].status;
-                const statusMap = {
-                    'queued': '⏳ 正在排队...',
-                    'in_progress': '⚙️ 正在构建...',
-                    'succeeded': '✅ 部署成功 (已上线)',
-                    'failed': '❌ 部署失败',
-                    'stale': '⚠️ 已过期'
-                };
-                stateSpan.innerText = statusMap[latest] || latest;
-
-                if (latest === 'queued' || latest === 'in_progress') {
-                    setTimeout(poll, 3000);
-                }
-            } catch (e) { console.error(e); }
-        };
-        poll();
-    }
 
     // 处理已有仓库更新
     async function handleUpdate() {
@@ -242,7 +212,7 @@
         try {
             await uploadToGithub(repo);
             log("✅ 更新成功！", "success");
-            checkDeploymentProgress(repo);
+
         } catch(e) { log(e.message, "error"); }
     }
 
@@ -273,7 +243,7 @@
             });
 
             log(`✅ 创建并部署成功！\n地址: https://${username}.github.io/${name}/`, "success");
-            checkDeploymentProgress(`${username}/${name}`);
+
             fetchRepos(); // 顺便刷新列表
         } catch(e) { log(e.message, "error"); }
     }
