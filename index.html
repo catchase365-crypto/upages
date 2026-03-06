@@ -51,6 +51,7 @@
     </select>
     <button class="btn-update" onclick="if(confirm('确定要覆盖并同步此仓库的 index.html 吗？')) handleUpdate()">覆盖并同步 Pages</button>
     <button class="btn-fetch" style="background:#2d1b22; color:#ffb7c5; border: 1px solid #d44d70; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
+    <button class="btn-fetch" style="background:#2d1b22; color:#ffb7c5; border: 1px solid #d44d70; margin-top:10px;" onclick="openRepoUrl()">📂 打开 GitHub 仓库</button>
 
     <button class="btn-fetch" style="background:#2d1b22; color:#f8bbd0; border: 1px solid #8e4483; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
     <button class="btn-fetch" style="background:#1a237e; color:#c5cae9; border: 1px solid #3f51b5; margin-top:10px;" onclick="handleRename()">✏️ 修改仓库名 (同步更改网址后缀)</button>
@@ -118,6 +119,13 @@
             opts.body = JSON.stringify(body);
         }
         return fetch(url, opts);
+    }
+
+    // 打开 GitHub 仓库地址
+    function openRepoUrl() {
+        const repo = document.getElementById('repoSelect').value;
+        if (!repo) return alert("请先选择一个仓库");
+        window.open(`https://github.com/${repo}`, '_blank');
     }
 
     // 跳转到 Pages 页面
