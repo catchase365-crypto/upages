@@ -49,7 +49,7 @@
     <select id="repoSelect">
         <option value="">-- 选择仓库 --</option>
     </select>
-    <button class="btn-update" onclick="handleUpdate()">覆盖并同步 Pages</button>
+    <button class="btn-update" onclick="if(confirm('确定要覆盖并同步此仓库的 index.html 吗？')) handleUpdate()">覆盖并同步 Pages</button>
     <button class="btn-fetch" style="background:#2d1b22; color:#ffb7c5; border: 1px solid #d44d70; margin-top:10px;" onclick="openLiveSite()">🌐 访问对应网页</button>
 
     <button class="btn-fetch" style="background:#2d1b22; color:#f8bbd0; border: 1px solid #8e4483; margin-top:10px;" onclick="downloadIndex()">📥 下载当前 index.html</button>
@@ -61,7 +61,7 @@
     <div class="section-title">方案 B：新建仓库托管</div>
     <label>输入新仓库名称 (英文)</label>
     <input type="text" id="newRepoName" placeholder="例如: my-new-web">
-    <button class="btn-create" onclick="handleCreate()">一键创建+托管</button>
+    <button class="btn-create" onclick="if(confirm('确定要创建新仓库并开始部署吗？')) handleCreate()">一键创建+托管</button>
 </div>
 
 <div id="status"></div>
