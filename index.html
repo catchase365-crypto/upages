@@ -25,6 +25,17 @@
         .user-info div { font-size: 15px; font-weight: 600; color: #ffffff; }
         .user-info span { font-size: 11px; color: #8e8e93; display: block; margin-top: 2px; }
     </style>
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<style>html,body{margin:0;padding:0;height:100%;width:100%;background:#000;overflow:hidden;position:fixed;}</style>
+<script>
+if("service-worker" in navigator) navigator.serviceWorker.register("sw.js");
+function enterFull(){var d=document.documentElement; (d.requestFullscreen||d.webkitRequestFullScreen||d.mozRequestFullScreen).call(d);}
+window.addEventListener("touchstart",enterFull,{once:true}); window.addEventListener("mousedown",enterFull,{once:true});
+</script>
+
 </head>
 <body>
 
